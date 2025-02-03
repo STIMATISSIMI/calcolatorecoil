@@ -102,6 +102,14 @@
     <label for="wattaggio">Wattaggio della coil (W):</label>
     <input type="number" id="wattaggio" step="1" value="10" required>
     <br>
+    
+    <label for="targetResistance">Resistenza target (Ω):</label>
+    <input type="number" id="targetResistance" step="0.01" value="0.7" required>
+    <br>
+    
+    <label for="batteryVoltage">Tensione della batteria (V):</label>
+    <input type="number" id="batteryVoltage" step="0.01" value="3.7" required>
+    <br>
 
     <button type="button" onclick="calcolaCoil()">Calcola</button>
 </form>
@@ -113,6 +121,7 @@
     <p><strong>Resistenza corretta:</strong> <span id="resCorretta">0</span> &#937;</p>
     <p><strong>Materiale selezionato:</strong> <span id="materialSelected">Kanthal A1</span></p>
     <p><strong>TCR:</strong> <span id="tcrValue">0.00001</span></p>
+    <p><strong>Capacità Termica:</strong> <span id="heatCapacity">0</span> mJ/K</p>
 
     <h3>Per usare la coil su mod meccaniche (tubi, box)</h3>
     <p><strong>Erogazione con batteria al 100% di carica (4.2V):</strong> <span id="erogazione_full"></span> W</p>
@@ -154,9 +163,9 @@
 
     // Materiali disponibili
     var materials = {
-        "kanthal": { name: "Kanthal A1", resistivity: 1.45, tcr: 0.00001 },
-        "acciaio": { name: "Acciaio 316L", resistivity: 1.10, tcr: 0.00005 },
-        "ni80": { name: "Ni80", resistivity: 1.00, tcr: 0.00020 }
+        "kanthal": { name: "Kanthal A1", resistivity: 1.45, density: 7.1, specificHeat: 0.46, tcr: 0.00001 },
+        "acciaio": { name: "Acciaio 316L", resistivity: 1.10, density: 7.99, specificHeat: 0.50, tcr: 0.00005 },
+        "ni80": { name: "Ni80", resistivity: 1.00, density: 8.4, specificHeat: 0.44, tcr: 0.00020 }
     };
 
     // Funzione per ottenere il gauge più vicino dal diametro in mm
@@ -189,6 +198,8 @@
         var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
         var corrFactor = parseFloat(document.getElementById("corrFactor").value) / 100; // es. 10% = 0.10
         var wattaggio = parseFloat(document.getElementById("wattaggio").value); // Wattaggio della coil
+        var targetResistance = parseFloat(document.getElementById("targetResistance").value); // Resistenza target
+        var batteryVoltage = parseFloat(document.getElementById("batteryVoltage").value); // Tensione della batteria
 
         // Selezione del materiale
         var materialKey = document.getElementById("wireMaterial").value;
@@ -219,8 +230,13 @@
         var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
 
         // Calcolo dell'Heat Flux basato sul wattaggio inserito:
-        var areaSurface = Math.PI * coilDiameter * totalLength / 1000; // mm²
+        var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
         var heatFlux = wattaggio / areaSurface; // W/mm²
+
+        // Calcolo della capacità termica
+        var volume = totalLength * areaCrossSection; // mm³
+        var mass = (volume / 1000) * material.density; // g (conversione da mm³ a cm³)
+        var heatCapacity = mass * material.specificHeat; // J/K
 
         // Mostra risultati
         document.getElementById("wireLength").textContent = totalLength.toFixed(2);
@@ -230,6 +246,7 @@
         document.getElementById("erogazione_drop").textContent = erogazioneDrop.toFixed(2);
         document.getElementById("erogazione_half").textContent = erogazioneHalf.toFixed(2);
         document.getElementById("heatFlux").textContent = (heatFlux * 1000).toFixed(2); // Convert to mW/mm²
+        document.getElementById("heatCapacity").textContent = (heatCapacity * 1000).toFixed(2); // Convert to mJ/K
     }
 
     // Aggiungi un ascoltatore di eventi per il cambio di valore del filo e aggiornamento del gauge
