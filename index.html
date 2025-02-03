@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calcolatore di Coil</title>
-    <style>
+    <style id="themeStyle">
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
             background-color: #f0f0f0;
+            color: #000;
         }
         .container {
             background-color: #fff;
@@ -49,6 +50,20 @@
             text-align: center;
             margin-top: 20px;
         }
+        .night-mode {
+            background-color: #333;
+            color: #fff;
+        }
+        .night-mode .container {
+            background-color: #444;
+        }
+        .night-mode button {
+            background-color: #555;
+            color: #fff;
+        }
+        .night-mode button:hover {
+            background-color: #666;
+        }
     </style>
 </head>
 <body>
@@ -73,14 +88,25 @@
         <button onclick="calculateResistance()">Calcola Resistenza</button>
         
         <div class="result" id="result"></div>
+        <button id="toggleTheme" onclick="toggleTheme()">Attiva modalità notte</button>
     </div>
 
     <script>
-        const RESISTIVITY = {
-            'SS316L': 0.00075,
-            'Kanthal A1': 1.45,
-            'Ni80': 1.09,
+        // Dati dei materiali del filo
+        const MATERIALS = {
+            'SS316L': { tcr: 0.00088, resistivity: 0.00075 },
+            'Kanthal A1': { tcr: 0.000002, resistivity: 1.45 },
+            'Ni80': { tcr: 0.0001, resistivity: 1.09 }
         };
+
+        // Carica il tema salvato
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'night') {
+                document.body.classList.add('night-mode');
+                document.getElementById('toggleTheme').innerText = 'Disattiva modalità notte';
+            }
+        });
 
         function calculateResistance() {
             const material = document.getElementById('material').value;
@@ -93,12 +119,26 @@
                 return;
             }
 
-            const resistivity = RESISTIVITY[material];
+            const resistivity = MATERIALS[material].resistivity;
             const wireArea = Math.PI * Math.pow(diameter / 2, 2); // Area della sezione del filo in mm^2
             const resistancePerMm = resistivity / wireArea;
             const totalResistance = resistancePerMm * length * wraps;
 
             document.getElementById('result').innerText = `La resistenza della coil è: ${totalResistance.toFixed(2)} Ω`;
+        }
+
+        function toggleTheme() {
+            const bodyClassList = document.body.classList;
+            const themeButton = document.getElementById('toggleTheme');
+            if (bodyClassList.contains('night-mode')) {
+                bodyClassList.remove('night-mode');
+                themeButton.innerText = 'Attiva modalità notte';
+                localStorage.setItem('theme', 'day');
+            } else {
+                bodyClassList.add('night-mode');
+                themeButton.innerText = 'Disattiva modalità notte';
+                localStorage.setItem('theme', 'night');
+            }
         }
     </script>
 </body>
