@@ -1,158 +1,49 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Calcolatore di Heat Flux per Coil da Vaping</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            color: #000000;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        label {
-            display: inline-block;
-            width: 250px;
-            margin-bottom: 5px;
-        }
-        input, select {
-            margin-bottom: 10px;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #CCC;
-        }
-        .gauge {
-            font-weight: bold;
-            color: #333;
-        }
-        .gauge-grey {
-            color: #D3D3D3; /* Grigio quasi bianco per "circa AWG" e numero */
-        }
-        .night-mode {
-            background-color: #000000;
-            color: #ffffff;
-        }
-        .night-mode .result {
-            border-color: #555;
-        }
-        .toggle-night-mode {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .night-mode .toggle-night-mode {
-            background-color: #333;
-            color: #ffffff;
-            border-color: #555;
-        }
-    </style>
-</head>
-<body>
+# Valori di resistività (Ω mm^2/m)
+RESISTIVITY = {
+    'SS316L': 0.00075,
+    'Kanthal A1': 1.45,
+    'Ni80': 1.09,
+}
 
-<h2>Calcolatore di Heat Flux per Coil da Vaping</h2>
+# Valori di TCR (Temperature Coefficient of Resistance)
+TCR = {
+    'SS316L': 0.00088,
+    'Kanthal A1': 0.000002,
+    'Ni80': 0.0001,
+}
 
-<div class="toggle-night-mode" onclick="toggleNightMode()">Modalità Notte</div>
+def calculate_resistance(material, wire_diameter, num_wraps, coil_length):
+    """
+    Calcola la resistenza della coil.
+    
+    :param material: Materiale del filo (SS316L, Kanthal A1, Ni80)
+    :param wire_diameter: Diametro del filo (mm)
+    :param num_wraps: Numero di spire
+    :param coil_length: Lunghezza della coil (mm)
+    :return: Resistenza della coil (Ω)
+    """
+    if material not in RESISTIVITY:
+        raise ValueError("Materiale non valido. Scegli tra: SS316L, Kanthal A1, Ni80.")
+    
+    resistivity = RESISTIVITY[material]
+    wire_area = (wire_diameter / 2) ** 2 * 3.1416  # Area della sezione del filo in mm^2
+    resistance_per_mm = resistivity / wire_area
+    total_resistance = resistance_per_mm * coil_length * num_wraps
+    
+    return total_resistance
 
-<form id="coilForm">
-    <label for="wireDiameter">Spessore del filo (mm):</label>
-    <input type="number" id="wireDiameter" step="0.01" value="0.32" required>
-    <span id="gaugeDisplay" class="gauge"></span>
-    <br>
+def main():
+    print("Calcolatore della resistenza della coil")
+    material = input("Inserisci il materiale del filo (SS316L, Kanthal A1, Ni80): ")
+    wire_diameter = float(input("Inserisci il diametro del filo (mm): "))
+    num_wraps = int(input("Inserisci il numero di spire: "))
+    coil_length = float(input("Inserisci la lunghezza della coil (mm): "))
+    
+    try:
+        resistance = calculate_resistance(material, wire_diameter, num_wraps, coil_length)
+        print(f"La resistenza della coil è: {resistance:.2f} Ω")
+    except ValueError as e:
+        print(e)
 
-    <label for="coilDiameter">Diametro della coil (mm):</label>
-    <input type="number" id="coilDiameter" step="0.01" value="2.25" required>
-    <br>
-
-    <label for="numSpire">Numero di spire:</label>
-    <input type="number" id="numSpire" step="0.5" value="6.0" required>
-    <br>
-
-    <label for="legLength">Lunghezza per gamba (mm):</label>
-    <input type="number" id="legLength" step="0.1" value="2" required>
-    <br>
-
-    <label for="batteryVoltage">Tensione della batteria (V):</label>
-    <input type="number" id="batteryVoltage" step="0.01" value="3.7" required>
-    <br>
-
-    <button type="button" onclick="calcolaHeatFlux()">Calcola</button>
-</form>
-
-<div class="result">
-    <h3>Risultati del Calcolo</h3>
-    <p><strong>Lunghezza del filo richiesta:</strong> <span id="wireLength">0</span> mm</p>
-    <p><strong>Resistenza teorica:</strong> <span id="resTeorica">0</span> &#937;</p>
-    <p><strong>Potenza:</strong> <span id="power">0</span> W</p>
-    <p><strong>Heat Flux:</strong> <span id="heatFlux">0</span> mW/mm²</p>
-</div>
-
-<script type="text/javascript">
-    // Funzione per attivare/disattivare la modalità notte
-    function toggleNightMode() {
-        document.body.classList.toggle('night-mode');
-        const isNightMode = document.body.classList.contains('night-mode');
-        localStorage.setItem('nightMode', isNightMode ? 'enabled' : 'disabled');
-    }
-
-    // Controlla lo stato della modalità notte al caricamento della pagina
-    window.onload = function() {
-        if (localStorage.getItem('nightMode') === 'enabled') {
-            document.body.classList.add('night-mode');
-        }
-    };
-
-    // Materiali disponibili
-    var materials = {
-        "kanthal": { resistivity: 1.45 }
-    };
-
-    // Calcolo dell'Heat Flux
-    function calcolaHeatFlux() {
-        var wireDiameter = parseFloat(document.getElementById("wireDiameter").value); // mm
-        var coilDiameter = parseFloat(document.getElementById("coilDiameter").value); // mm
-        var numSpire = parseFloat(document.getElementById("numSpire").value);
-        var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
-        var batteryVoltage = parseFloat(document.getElementById("batteryVoltage").value); // Tensione della batteria
-
-        // Selezione del materiale
-        var materialKey = "kanthal";
-        var material = materials[materialKey];
-
-        // Resistività per il materiale selezionato (in Ω·mm²/m)
-        var resistivity = material.resistivity;
-
-        // Calcolo della lunghezza totale del filo:
-        var totalLength = numSpire * Math.PI * (coilDiameter + wireDiameter) + 2 * legLength; // mm
-
-        var radius = wireDiameter / 2;
-        var areaCrossSection = Math.PI * Math.pow(radius, 2); // mm²
-
-        // Calcolo della resistenza teorica:
-        var R_theoretical = (resistivity * (totalLength / 1000)) / areaCrossSection; // Ω
-
-        // Calcolo della potenza (Wattaggio) basato sulla tensione della batteria e resistenza teorica
-        var power = Math.pow(batteryVoltage, 2) / R_theoretical; // W
-
-        // Calcolo dell'Heat Flux basato sulla potenza calcolata:
-        var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
-        var heatFlux = power / areaSurface; // W/mm²
-
-        // Mostra risultati
-        document.getElementById("wireLength").textContent = totalLength.toFixed(2);
-        document.getElementById("resTeorica").textContent = R_theoretical.toFixed(2);
-        document.getElementById("power").textContent = power.toFixed(2);
-        document.getElementById("heatFlux").textContent = (heatFlux * 1000).toFixed(2); // Convert to mW/mm²
-    }
-</script>
-
-</body>
-</html>
+if __name__ == "__main__":
+    main()
