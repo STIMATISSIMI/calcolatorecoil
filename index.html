@@ -1,36 +1,68 @@
-import math
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Resistenza Coil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input, select {
+            margin: 5px 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calcolatore Resistenza Coil</h1>
+    <form id="calcForm">
+        <label for="material">Materiale:</label>
+        <select id="material">
+            <option value="Kanthal">Kanthal</option>
+            <option value="Nichrome">Nichrome</option>
+            <option value="Stainless Steel">Acciaio Inox</option>
+            <option value="Titanium">Titanio</option>
+        </select><br>
 
-# Resistività (ohm per metro) dei vari materiali
-resistivity = {
-    'Kanthal': 1.45e-6,
-    'Nichrome': 1.10e-6,
-    'Stainless Steel': 0.88e-6,
-    'Titanium': 0.35e-6
-}
+        <label for="wireDiameter">Diametro Filo (mm):</label>
+        <input type="number" id="wireDiameter" step="0.01"><br>
 
-def calculate_resistance(material, wire_diameter, coil_diameter, num_wraps):
-    # Convertire il diametro del filo da millimetri a metri
-    wire_diameter_m = wire_diameter * 1e-3
-    coil_diameter_m = coil_diameter * 1e-3
+        <label for="coilDiameter">Diametro Coil (mm):</label>
+        <input type="number" id="coilDiameter" step="0.01"><br>
 
-    # Calcolare la lunghezza del filo in metri
-    coil_circumference = math.pi * coil_diameter_m
-    wire_length = coil_circumference * num_wraps
+        <label for="numWraps">Numero di Spire:</label>
+        <input type="number" id="numWraps"><br>
 
-    # Calcolare l'area della sezione trasversale del filo
-    cross_section_area = math.pi * (wire_diameter_m / 2) ** 2
+        <button type="button" onclick="calculateResistance()">Calcola</button>
+    </form>
 
-    # Calcolare la resistenza
-    material_resistivity = resistivity[material]
-    resistance = (material_resistivity * wire_length) / cross_section_area
+    <h2>Risultato</h2>
+    <p id="result">Resistenza: </p>
 
-    return resistance
+    <script>
+        const resistivity = {
+            'Kanthal': 1.45e-6,
+            'Nichrome': 1.10e-6,
+            'Stainless Steel': 0.88e-6,
+            'Titanium': 0.35e-6
+        };
 
-# Esempio di utilizzo
-material = 'Kanthal'
-wire_diameter = 0.5  # in millimetri
-coil_diameter = 2.5  # in millimetri
-num_wraps = 5
+        function calculateResistance() {
+            const material = document.getElementById('material').value;
+            const wireDiameter = parseFloat(document.getElementById('wireDiameter').value) * 1e-3;
+            const coilDiameter = parseFloat(document.getElementById('coilDiameter').value) * 1e-3;
+            const numWraps = parseInt(document.getElementById('numWraps').value);
 
-resistance = calculate_resistance(material, wire_diameter, coil_diameter, num_wraps)
-print(f"La resistenza della coil è: {resistance:.2f} ohm")
+            const coilCircumference = Math.PI * coilDiameter;
+            const wireLength = coilCircumference * numWraps;
+            const crossSectionArea = Math.PI * (wireDiameter / 2) ** 2;
+            const materialResistivity = resistivity[material];
+            const resistance = (materialResistivity * wireLength) / crossSectionArea;
+
+            document.getElementById('result').textContent = `Resistenza: ${resistance.toFixed(2)} ohm`;
+        }
+    </script>
+</body>
+</html>
