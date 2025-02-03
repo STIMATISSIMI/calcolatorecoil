@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Calcolatore di Coil con Erogazione Svapo</title>
+    <title>Calcolatore di Heat Flux per Coil da Vaping</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,7 +58,7 @@
 </head>
 <body>
 
-<h2>Calcolatore di Coil e Erogazione Svapo</h2>
+<h2>Calcolatore di Heat Flux per Coil da Vaping</h2>
 
 <div class="toggle-night-mode" onclick="toggleNightMode()">Modalità Notte</div>
 
@@ -68,23 +68,8 @@
     <span id="gaugeDisplay" class="gauge"></span>
     <br>
 
-    <label for="wireMaterial">Materiale del filo:</label>
-    <select id="wireMaterial" required>
-        <option value="kanthal" selected>Kanthal A1</option>
-        <option value="acciaio">Acciaio 316L</option>
-        <option value="ni80">Ni80</option>
-    </select>
-    <br>
-
     <label for="coilDiameter">Diametro della coil (mm):</label>
-    <select id="coilDiameter" required>
-        <option value="1.75">1.75</option>
-        <option value="2">2.00</option>
-        <option value="2.25" selected>2.25</option>
-        <option value="2.5">2.50</option>
-        <option value="2.75">2.75</option>
-        <option value="3">3.00</option>
-    </select>
+    <input type="number" id="coilDiameter" step="0.01" value="2.25" required>
     <br>
 
     <label for="numSpire">Numero di spire:</label>
@@ -95,36 +80,18 @@
     <input type="number" id="legLength" step="0.1" value="2" required>
     <br>
 
-    <label for="corrFactor">Correzione (%):</label>
-    <input type="number" id="corrFactor" step="0.1" value="10" required>
-    <br>
-
-    <label for="targetResistance">Resistenza target (Ω):</label>
-    <input type="number" id="targetResistance" step="0.01" value="0.7" required>
-    <br>
-    
     <label for="batteryVoltage">Tensione della batteria (V):</label>
     <input type="number" id="batteryVoltage" step="0.01" value="3.7" required>
     <br>
 
-    <button type="button" onclick="calcolaCoil()">Calcola</button>
+    <button type="button" onclick="calcolaHeatFlux()">Calcola</button>
 </form>
 
 <div class="result">
     <h3>Risultati del Calcolo</h3>
     <p><strong>Lunghezza del filo richiesta:</strong> <span id="wireLength">0</span> mm</p>
     <p><strong>Resistenza teorica:</strong> <span id="resTeorica">0</span> &#937;</p>
-    <p><strong>Resistenza corretta:</strong> <span id="resCorretta">0</span> &#937;</p>
-    <p><strong>Materiale selezionato:</strong> <span id="materialSelected">Kanthal A1</span></p>
-    <p><strong>TCR:</strong> <span id="tcrValue">0.00001</span></p>
-    <p><strong>Capacità Termica:</strong> <span id="heatCapacity">0</span> mJ/K</p>
-
-    <h3>Per usare la coil su mod meccaniche (tubi, box)</h3>
-    <p><strong>Erogazione con batteria al 100% di carica (4.2V):</strong> <span id="erogazione_full"></span> W</p>
-    <p><strong>Erogazione con batteria al 70-80% di carica (3.8V):</strong> <span id="erogazione_drop"></span> W</p>
-    <p><strong>Erogazione con batteria al 50% di carica (3.7V):</strong> <span id="erogazione_half"></span> W</p>
-
-    <h3>Heat Flux</h3>
+    <p><strong>Potenza:</strong> <span id="power">0</span> W</p>
     <p><strong>Heat Flux:</strong> <span id="heatFlux">0</span> mW/mm²</p>
 </div>
 
@@ -141,70 +108,26 @@
         if (localStorage.getItem('nightMode') === 'enabled') {
             document.body.classList.add('night-mode');
         }
-        aggiornaGaugeDisplay();
     };
-
-    // Tabella di conversione approssimativa per gauge
-    var gaugeTable = [
-        { gauge: 30, mm: 0.255 },
-        { gauge: 29, mm: 0.287 },
-        { gauge: 28, mm: 0.321 },
-        { gauge: 27, mm: 0.361 },
-        { gauge: 26, mm: 0.405 },
-        { gauge: 25, mm: 0.455 },
-        { gauge: 24, mm: 0.511 },
-        { gauge: 23, mm: 0.573 },
-        { gauge: 22, mm: 0.644 }
-    ];
 
     // Materiali disponibili
     var materials = {
-        "kanthal": { name: "Kanthal A1", resistivity: 1.45, density: 7.1, specificHeat: 0.46, tcr: 0.00001 },
-        "acciaio": { name: "Acciaio 316L", resistivity: 0.75, density: 7.9, specificHeat: 0.50, tcr: 0.00094 },
-        "ni80": { name: "Ni80", resistivity: 1.09, density: 8.4, specificHeat: 0.44, tcr: 0.00015 }
+        "kanthal": { resistivity: 1.45 }
     };
 
-    // Funzione per ottenere il gauge più vicino dal diametro in mm
-    function getGaugeFromMm(mm) {
-        var closest = gaugeTable[0];
-        for (var i = 1; i < gaugeTable.length; i++) {
-            if (Math.abs(gaugeTable[i].mm - mm) < Math.abs(closest.mm - mm)) {
-                closest = gaugeTable[i];
-            }
-        }
-        return closest.gauge;
-    }
-
-    // Aggiorna il display del gauge accanto allo spessore del filo
-    function aggiornaGaugeDisplay() {
-        var wireDiameter = parseFloat(document.getElementById("wireDiameter").value);
-        var gauge = getGaugeFromMm(wireDiameter);
-        var gaugeText = "circa AWG " + gauge;
-
-        // Applicare il colore grigio quasi bianco per "circa AWG" e il numero di gauge
-        document.getElementById("gaugeDisplay").className = "gauge-grey";
-        document.getElementById("gaugeDisplay").textContent = gaugeText;
-    }
-
-    // Calcolo della coil e erogazione
-    function calcolaCoil() {
+    // Calcolo dell'Heat Flux
+    function calcolaHeatFlux() {
         var wireDiameter = parseFloat(document.getElementById("wireDiameter").value); // mm
         var coilDiameter = parseFloat(document.getElementById("coilDiameter").value); // mm
         var numSpire = parseFloat(document.getElementById("numSpire").value);
         var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
-        var corrFactor = parseFloat(document.getElementById("corrFactor").value) / 100; // es. 10% = 0.10
-        var targetResistance = parseFloat(document.getElementById("targetResistance").value); // Resistenza target
         var batteryVoltage = parseFloat(document.getElementById("batteryVoltage").value); // Tensione della batteria
 
         // Selezione del materiale
-        var materialKey = document.getElementById("wireMaterial").value;
+        var materialKey = "kanthal";
         var material = materials[materialKey];
 
-        // Aggiorna i dati sul materiale selezionato nell'output
-        document.getElementById("materialSelected").textContent = material.name;
-        document.getElementById("tcrValue").textContent = material.tcr;
-
-        // Resistività per il materiale selezionato (in &#937;·mm²/m)
+        // Resistività per il materiale selezionato (in Ω·mm²/m)
         var resistivity = material.resistivity;
 
         // Calcolo della lunghezza totale del filo:
@@ -214,37 +137,21 @@
         var areaCrossSection = Math.PI * Math.pow(radius, 2); // mm²
 
         // Calcolo della resistenza teorica:
-        var R_theoretical = (resistivity * (totalLength / 1000)) / areaCrossSection; // &#937;
+        var R_theoretical = (resistivity * (totalLength / 1000)) / areaCrossSection; // Ω
 
-        // Applichiamo la correzione:
-        var R_corrected = R_theoretical * (1 + corrFactor);
-
-        // Calcolo della potenza (Wattaggio) basato sulla tensione della batteria e resistenza corretta
-        var power = Math.pow(batteryVoltage, 2) / R_corrected; // W
+        // Calcolo della potenza (Wattaggio) basato sulla tensione della batteria e resistenza teorica
+        var power = Math.pow(batteryVoltage, 2) / R_theoretical; // W
 
         // Calcolo dell'Heat Flux basato sulla potenza calcolata:
         var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
         var heatFlux = power / areaSurface; // W/mm²
 
-        // Calcolo della capacità termica
-        var volume = totalLength * areaCrossSection; // mm³
-        var mass = (volume / 1000) * material.density; // g (conversione da mm³ a cm³)
-        var heatCapacity = mass * material.specificHeat; // J/K
-
         // Mostra risultati
         document.getElementById("wireLength").textContent = totalLength.toFixed(2);
         document.getElementById("resTeorica").textContent = R_theoretical.toFixed(2);
-        document.getElementById("resCorretta").textContent = R_corrected.toFixed(2);
-        document.getElementById("erogazione_full").textContent = (Math.pow(4.2, 2) / R_corrected).toFixed(2);
-        document.getElementById("erogazione_drop").textContent = (Math.pow(3.8, 2) / R_corrected).toFixed(2);
-        document.getElementById("erogazione_half").textContent = (Math.pow(3.7, 2) / R_corrected).toFixed(2);
+        document.getElementById("power").textContent = power.toFixed(2);
         document.getElementById("heatFlux").textContent = (heatFlux * 1000).toFixed(2); // Convert to mW/mm²
-        document.getElementById("heatCapacity").textContent = (heatCapacity * 1000).toFixed(2); // Convert to mJ/K
     }
-
-    // Aggiungi un ascoltatore di eventi per il cambio di valore del filo e aggiornamento del gauge
-    document.getElementById("wireDiameter").addEventListener("input", aggiornaGaugeDisplay);
-    aggiornaGaugeDisplay(); // Inizializza il gauge all'avvio
 </script>
 
 </body>
