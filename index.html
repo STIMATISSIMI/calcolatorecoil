@@ -99,10 +99,6 @@
     <input type="number" id="corrFactor" step="0.1" value="10" required>
     <br>
 
-    <label for="wattaggio">Wattaggio della coil (W):</label>
-    <input type="number" id="wattaggio" step="1" value="10" required>
-    <br>
-    
     <label for="targetResistance">Resistenza target (Ω):</label>
     <input type="number" id="targetResistance" step="0.01" value="0.7" required>
     <br>
@@ -197,7 +193,6 @@
         var numSpire = parseFloat(document.getElementById("numSpire").value);
         var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
         var corrFactor = parseFloat(document.getElementById("corrFactor").value) / 100; // es. 10% = 0.10
-        var wattaggio = parseFloat(document.getElementById("wattaggio").value); // Wattaggio della coil
         var targetResistance = parseFloat(document.getElementById("targetResistance").value); // Resistenza target
         var batteryVoltage = parseFloat(document.getElementById("batteryVoltage").value); // Tensione della batteria
 
@@ -224,14 +219,12 @@
         // Applichiamo la correzione:
         var R_corrected = R_theoretical * (1 + corrFactor);
 
-        // Calcolo dell'erogazione
-        var erogazioneFull = Math.pow(4.2, 2) / R_corrected; // W
-        var erogazioneDrop = Math.pow(3.8, 2) / R_corrected; // W
-        var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
+        // Calcolo della potenza (Wattaggio) basato sulla tensione della batteria e resistenza corretta
+        var power = Math.pow(batteryVoltage, 2) / R_corrected; // W
 
-        // Calcolo dell'Heat Flux basato sul wattaggio inserito:
-        var areaSurface = Math.PI * coilDiameter * totalLength / 1000; // mm²
-        var heatFlux = wattaggio / areaSurface; // W/mm²
+        // Calcolo dell'Heat Flux basato sulla potenza calcolata:
+        var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
+        var heatFlux = power / areaSurface; // W/mm²
 
         // Calcolo della capacità termica
         var volume = totalLength * areaCrossSection; // mm³
@@ -242,9 +235,9 @@
         document.getElementById("wireLength").textContent = totalLength.toFixed(2);
         document.getElementById("resTeorica").textContent = R_theoretical.toFixed(2);
         document.getElementById("resCorretta").textContent = R_corrected.toFixed(2);
-        document.getElementById("erogazione_full").textContent = erogazioneFull.toFixed(2);
-        document.getElementById("erogazione_drop").textContent = erogazioneDrop.toFixed(2);
-        document.getElementById("erogazione_half").textContent = erogazioneHalf.toFixed(2);
+        document.getElementById("erogazione_full").textContent = (Math.pow(4.2, 2) / R_corrected).toFixed(2);
+        document.getElementById("erogazione_drop").textContent = (Math.pow(3.8, 2) / R_corrected).toFixed(2);
+        document.getElementById("erogazione_half").textContent = (Math.pow(3.7, 2) / R_corrected).toFixed(2);
         document.getElementById("heatFlux").textContent = (heatFlux * 1000).toFixed(2); // Convert to mW/mm²
         document.getElementById("heatCapacity").textContent = (heatCapacity * 1000).toFixed(2); // Convert to mJ/K
     }
