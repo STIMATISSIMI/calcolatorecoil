@@ -1,198 +1,49 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Calcolatore di Coil con Erogazione Svapo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-        }
-        label {
-            display: inline-block;
-            width: 250px;
-            margin-bottom: 5px;
-        }
-        input, select {
-            margin-bottom: 10px;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #CCC;
-        }
-        .gauge {
-            font-weight: bold;
-            color: #333;
-        }
-        .gauge-grey {
-            color: #D3D3D3; /* Grigio quasi bianco per "circa AWG" e numero */
-        }
-    </style>
-</head>
-<body>
+function calcolaCoil() {
+    var wireDiameter = parseFloat(document.getElementById("wireDiameter").value); // mm
+    var coilDiameter = parseFloat(document.getElementById("coilDiameter").value); // mm
+    var numSpire = parseFloat(document.getElementById("numSpire").value);
+    var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
+    var corrFactor = parseFloat(document.getElementById("corrFactor").value) / 100; // es. 10% = 0.10
+    var wattaggio = parseFloat(document.getElementById("wattaggio").value); // Wattaggio della coil
 
-<h2>Calcolatore di Coil e Erogazione Svapo</h2>
+    // Selezione del materiale
+    var materialKey = document.getElementById("wireMaterial").value;
+    var material = materials[materialKey];
 
-<form id="coilForm">
-    <label for="wireDiameter">Spessore del filo (mm):</label>
-    <input type="number" id="wireDiameter" step="0.01" value="0.32" required>
-    <span id="gaugeDisplay" class="gauge"></span>
-    <br>
+    // Aggiorna i dati sul materiale selezionato nell'output
+    document.getElementById("materialSelected").textContent = material.name;
+    document.getElementById("tcrValue").textContent = material.tcr;
 
-    <label for="wireMaterial">Materiale del filo:</label>
-    <select id="wireMaterial" required>
-        <option value="kanthal" selected>Kanthal A1</option>
-        <option value="acciaio">Acciaio 316L</option>
-        <option value="ni80">Ni80</option>
-    </select>
-    <br>
+    // Resistività per il materiale selezionato (in &#937;·mm²/m)
+    var resistivity = material.resistivity;
 
-    <label for="coilDiameter">Diametro della coil (mm):</label>
-    <select id="coilDiameter" required>
-        <option value="1.75">1.75</option>
-        <option value="2">2.00</option>
-        <option value="2.25" selected>2.25</option>
-        <option value="2.5">2.50</option>
-        <option value="2.75">2.75</option>
-        <option value="3">3.00</option>
-    </select>
-    <br>
+    // Calcolo della lunghezza totale del filo:
+    var totalLength = numSpire * Math.PI * (coilDiameter + wireDiameter) + 2 * legLength; // mm
 
-    <label for="numSpire">Numero di spire:</label>
-    <input type="number" id="numSpire" step="0.5" value="6.0" required>
-    <br>
+    var radius = wireDiameter / 2;
+    var areaCrossSection = Math.PI * Math.pow(radius, 2); // mm²
 
-    <label for="legLength">Lunghezza per gamba (mm):</label>
-    <input type="number" id="legLength" step="0.1" value="2" required>
-    <br>
+    // Calcolo della resistenza teorica:
+    var R_theoretical = (resistivity * (totalLength / 1000)) / areaCrossSection; // &#937;
 
-    <label for="corrFactor">Correzione (%):</label>
-    <input type="number" id="corrFactor" step="0.1" value="10" required>
-    <br>
+    // Applichiamo la correzione:
+    var R_corrected = R_theoretical * (1 + corrFactor);
 
-    <label for="wattaggio">Wattaggio della coil (W):</label>
-    <input type="number" id="wattaggio" step="1" value="12" required>
-    <br>
+    // Calcolo dell'erogazione
+    var erogazioneFull = Math.pow(4.2, 2) / R_corrected; // W
+    var erogazioneDrop = Math.pow(3.8, 2) / R_corrected; // W
+    var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
 
-    <button type="button" onclick="calcolaCoil()">Calcola</button>
-</form>
+    // Calcolo dell'Heat Flux basato sul wattaggio inserito:
+    var areaSurface = Math.PI * coilDiameter * totalLength / 1000; // mm²
+    var heatFlux = wattaggio / areaSurface; // mW/mm²
 
-<div class="result">
-    <h3>Risultati del Calcolo</h3>
-    <p><strong>Lunghezza del filo richiesta:</strong> <span id="wireLength">0</span> mm</p>
-    <p><strong>Resistenza teorica:</strong> <span id="resTeorica">0</span> &#937;</p>
-    <p><strong>Resistenza corretta:</strong> <span id="resCorretta">0</span> &#937;</p>
-    <p><strong>Materiale selezionato:</strong> <span id="materialSelected">Kanthal A1</span></p>
-    <p><strong>TCR:</strong> <span id="tcrValue">0.00001</span></p>
-
-    <h3>Per usare la coil su mod meccaniche (tubi, box)</h3>
-    <p><strong>Erogazione con batteria al 100% di carica (4.2V):</strong> <span id="erogazione_full"></span> W</p>
-    <p><strong>Erogazione con batteria al 70-80% di carica (3.8V):</strong> <span id="erogazione_drop"></span> W</p>
-    <p><strong>Erogazione con batteria al 50% di carica (3.7V):</strong> <span id="erogazione_half"></span> W</p>
-
-    <h3>Heat Flux</h3>
-    <p><strong>Heat Flux:</strong> <span id="heatFlux">0</span> mW/mm²</p>
-</div>
-
-<script type="text/javascript">
-    // Tabella di conversione approssimativa per gauge
-    var gaugeTable = [
-        { gauge: 30, mm: 0.255 },
-        { gauge: 29, mm: 0.287 },
-        { gauge: 28, mm: 0.321 },
-        { gauge: 27, mm: 0.361 },
-        { gauge: 26, mm: 0.405 },
-        { gauge: 25, mm: 0.455 },
-        { gauge: 24, mm: 0.511 },
-        { gauge: 23, mm: 0.573 },
-        { gauge: 22, mm: 0.644 }
-    ];
-
-    // Materiali disponibili
-    var materials = {
-        "kanthal": { name: "Kanthal A1", resistivity: 1.45, tcr: 0.00001 },
-        "acciaio": { name: "Acciaio 316L", resistivity: 1.10, tcr: 0.00005 },
-        "ni80": { name: "Ni80", resistivity: 1.00, tcr: 0.00020 }
-    };
-
-    // Funzione per ottenere il gauge più vicino dal diametro in mm
-    function getGaugeFromMm(mm) {
-        var closest = gaugeTable[0];
-        for (var i = 1; i < gaugeTable.length; i++) {
-            if (Math.abs(gaugeTable[i].mm - mm) < Math.abs(closest.mm - mm)) {
-                closest = gaugeTable[i];
-            }
-        }
-        return closest.gauge;
-    }
-
-    // Aggiorna il display del gauge accanto allo spessore del filo
-    function aggiornaGaugeDisplay() {
-        var wireDiameter = parseFloat(document.getElementById("wireDiameter").value);
-        var gauge = getGaugeFromMm(wireDiameter);
-        var gaugeText = "circa AWG " + gauge;
-
-        // Applicare il colore grigio quasi bianco per "circa AWG" e il numero di gauge
-        document.getElementById("gaugeDisplay").className = "gauge-grey";
-        document.getElementById("gaugeDisplay").textContent = gaugeText;
-    }
-
-    // Calcolo della coil e erogazione
-    function calcolaCoil() {
-        var wireDiameter = parseFloat(document.getElementById("wireDiameter").value); // mm
-        var coilDiameter = parseFloat(document.getElementById("coilDiameter").value); // mm
-        var numSpire = parseFloat(document.getElementById("numSpire").value);
-        var legLength = parseFloat(document.getElementById("legLength").value); // mm per gamba
-        var corrFactor = parseFloat(document.getElementById("corrFactor").value) / 100; // es. 10% = 0.10
-        var wattaggio = parseFloat(document.getElementById("wattaggio").value); // Wattaggio della coil
-
-        // Selezione del materiale
-        var materialKey = document.getElementById("wireMaterial").value;
-        var material = materials[materialKey];
-
-        // Aggiorna i dati sul materiale selezionato nell'output
-        document.getElementById("materialSelected").textContent = material.name;
-        document.getElementById("tcrValue").textContent = material.tcr;
-
-        // Resistività per il materiale selezionato (in &#937;·mm²/m)
-        var resistivity = material.resistivity;
-
-        // Calcolo della lunghezza totale del filo:
-        var totalLength = numSpire * Math.PI * (coilDiameter + wireDiameter) + 2 * legLength; // mm
-
-        var radius = wireDiameter / 2;
-        var area = Math.PI * Math.pow(radius, 2); // mm²
-
-        // Calcolo della resistenza teorica:
-        var R_theoretical = (resistivity * (totalLength / 1000)) / area; // &#937;
-
-        // Applichiamo la correzione:
-        var R_corrected = R_theoretical * (1 + corrFactor);
-
-        // Calcolo dell'erogazione
-        var erogazioneFull = Math.pow(4.2, 2) / R_corrected; // W
-        var erogazioneDrop = Math.pow(3.8, 2) / R_corrected; // W
-        var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
-
-        // Calcolo dell'Heat Flux basato sul wattaggio inserito:
-        var heatFlux = wattaggio / area; // mW/mm²
-
-        // Mostra risultati
-        document.getElementById("wireLength").textContent = totalLength.toFixed(2);
-        document.getElementById("resTeorica").textContent = R_theoretical.toFixed(2);
-        document.getElementById("resCorretta").textContent = R_corrected.toFixed(2);
-        document.getElementById("erogazione_full").textContent = erogazioneFull.toFixed(2);
-        document.getElementById("erogazione_drop").textContent = erogazioneDrop.toFixed(2);
-        document.getElementById("erogazione_half").textContent = erogazioneHalf.toFixed(2);
-        document.getElementById("heatFlux").textContent = heatFlux.toFixed(2);
-    }
-
-    // Aggiungi un ascoltatore di eventi per il cambio di valore del filo e aggiornamento del gauge
-    document.getElementById("wireDiameter").addEventListener("input", aggiornaGaugeDisplay);
-    aggiornaGaugeDisplay(); // Inizializza il gauge all'avvio
-</script>
-
-</body>
-</html>
+    // Mostra risultati
+    document.getElementById("wireLength").textContent = totalLength.toFixed(2);
+    document.getElementById("resTeorica").textContent = R_theoretical.toFixed(2);
+    document.getElementById("resCorretta").textContent = R_corrected.toFixed(2);
+    document.getElementById("erogazione_full").textContent = erogazioneFull.toFixed(2);
+    document.getElementById("erogazione_drop").textContent = erogazioneDrop.toFixed(2);
+    document.getElementById("erogazione_half").textContent = erogazioneHalf.toFixed(2);
+    document.getElementById("heatFlux").textContent = (heatFlux * 1000).toFixed(2); // Convert to mW/mm²
+}
