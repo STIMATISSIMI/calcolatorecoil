@@ -219,8 +219,8 @@
         var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
 
         // Calcolo dell'Heat Flux basato sul wattaggio inserito:
-        var areaSurface = Math.PI * coilDiameter * totalLength / 1000; // mm²
-        var heatFlux = wattaggio / areaSurface; // mW/mm²
+        var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
+        var heatFlux = wattaggio / areaSurface; // W/mm²
 
         // Mostra risultati
         document.getElementById("wireLength").textContent = totalLength.toFixed(2);
