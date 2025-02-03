@@ -1,145 +1,36 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calcolatore di Coil</title>
-    <style id="themeStyle">
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: #f0f0f0;
-            color: #000;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: auto;
-        }
-        h1 {
-            text-align: center;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #28a745;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        .result {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .night-mode {
-            background-color: #333;
-            color: #fff;
-        }
-        .night-mode .container {
-            background-color: #444;
-        }
-        .night-mode button {
-            background-color: #555;
-            color: #fff;
-        }
-        .night-mode button:hover {
-            background-color: #666;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Calcolatore di Coil</h1>
-        <label for="material">Materiale del filo:</label>
-        <select id="material">
-            <option value="SS316L">SS316L</option>
-            <option value="Kanthal A1">Kanthal A1</option>
-            <option value="Ni80">Ni80</option>
-        </select>
-        
-        <label for="diameter">Diametro del filo (mm):</label>
-        <input type="number" id="diameter" step="0.01" placeholder="E.g., 0.4">
-        
-        <label for="wraps">Numero di spire:</label>
-        <input type="number" id="wraps" placeholder="E.g., 5">
-        
-        <label for="length">Lunghezza della coil (mm):</label>
-        <input type="number" id="length" placeholder="E.g., 10">
-        
-        <button onclick="calculateResistance()">Calcola Resistenza</button>
-        
-        <div class="result" id="result"></div>
-        <button id="toggleTheme" onclick="toggleTheme()">Attiva modalità notte</button>
-    </div>
+import math
 
-    <script>
-        // Dati dei materiali del filo
-        const MATERIALS = {
-            'SS316L': { tcr: 0.00088, resistivity: 0.00075 },
-            'Kanthal A1': { tcr: 0.000002, resistivity: 1.45 },
-            'Ni80': { tcr: 0.0001, resistivity: 1.09 }
-        };
+# Resistività (ohm per metro) dei vari materiali
+resistivity = {
+    'Kanthal': 1.45e-6,
+    'Nichrome': 1.10e-6,
+    'Stainless Steel': 0.88e-6,
+    'Titanium': 0.35e-6
+}
 
-        // Carica il tema salvato
-        document.addEventListener('DOMContentLoaded', (event) => {
-            const theme = localStorage.getItem('theme');
-            if (theme === 'night') {
-                document.body.classList.add('night-mode');
-                document.getElementById('toggleTheme').innerText = 'Disattiva modalità notte';
-            }
-        });
+def calculate_resistance(material, wire_diameter, coil_diameter, num_wraps):
+    # Convertire il diametro del filo da millimetri a metri
+    wire_diameter_m = wire_diameter * 1e-3
+    coil_diameter_m = coil_diameter * 1e-3
 
-        function calculateResistance() {
-            const material = document.getElementById('material').value;
-            const diameter = parseFloat(document.getElementById('diameter').value);
-            const wraps = parseInt(document.getElementById('wraps').value);
-            const length = parseFloat(document.getElementById('length').value);
-            
-            if (!material || isNaN(diameter) || isNaN(wraps) || isNaN(length)) {
-                document.getElementById('result').innerText = "Per favore, inserisci tutti i valori correttamente.";
-                return;
-            }
+    # Calcolare la lunghezza del filo in metri
+    coil_circumference = math.pi * coil_diameter_m
+    wire_length = coil_circumference * num_wraps
 
-            const resistivity = MATERIALS[material].resistivity;
-            const wireArea = Math.PI * Math.pow(diameter / 2, 2); // Area della sezione del filo in mm^2
-            const resistancePerMm = resistivity / wireArea;
-            const totalResistance = resistancePerMm * length * wraps;
+    # Calcolare l'area della sezione trasversale del filo
+    cross_section_area = math.pi * (wire_diameter_m / 2) ** 2
 
-            document.getElementById('result').innerText = `La resistenza della coil è: ${totalResistance.toFixed(2)} Ω`;
-        }
+    # Calcolare la resistenza
+    material_resistivity = resistivity[material]
+    resistance = (material_resistivity * wire_length) / cross_section_area
 
-        function toggleTheme() {
-            const bodyClassList = document.body.classList;
-            const themeButton = document.getElementById('toggleTheme');
-            if (bodyClassList.contains('night-mode')) {
-                bodyClassList.remove('night-mode');
-                themeButton.innerText = 'Attiva modalità notte';
-                localStorage.setItem('theme', 'day');
-            } else {
-                bodyClassList.add('night-mode');
-                themeButton.innerText = 'Disattiva modalità notte';
-                localStorage.setItem('theme', 'night');
-            }
-        }
-    </script>
-</body>
-</html>
+    return resistance
+
+# Esempio di utilizzo
+material = 'Kanthal'
+wire_diameter = 0.5  # in millimetri
+coil_diameter = 2.5  # in millimetri
+num_wraps = 5
+
+resistance = calculate_resistance(material, wire_diameter, coil_diameter, num_wraps)
+print(f"La resistenza della coil è: {resistance:.2f} ohm")
