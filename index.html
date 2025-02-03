@@ -164,8 +164,8 @@
     // Materiali disponibili
     var materials = {
         "kanthal": { name: "Kanthal A1", resistivity: 1.45, density: 7.1, specificHeat: 0.46, tcr: 0.00001 },
-        "acciaio": { name: "Acciaio 316L", resistivity: 1.10, density: 7.99, specificHeat: 0.50, tcr: 0.00005 },
-        "ni80": { name: "Ni80", resistivity: 1.00, density: 8.4, specificHeat: 0.44, tcr: 0.00020 }
+        "acciaio": { name: "Acciaio 316L", resistivity: 0.75, density: 7.9, specificHeat: 0.50, tcr: 0.00094 },
+        "ni80": { name: "Ni80", resistivity: 1.09, density: 8.4, specificHeat: 0.44, tcr: 0.00015 }
     };
 
     // Funzione per ottenere il gauge più vicino dal diametro in mm
@@ -230,7 +230,7 @@
         var erogazioneHalf = Math.pow(3.7, 2) / R_corrected; // W
 
         // Calcolo dell'Heat Flux basato sul wattaggio inserito:
-        var areaSurface = Math.PI * coilDiameter * (totalLength / 1000); // mm²
+        var areaSurface = Math.PI * coilDiameter * totalLength / 1000; // mm²
         var heatFlux = wattaggio / areaSurface; // W/mm²
 
         // Calcolo della capacità termica
