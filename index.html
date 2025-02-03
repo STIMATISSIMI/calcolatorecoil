@@ -1,49 +1,105 @@
-# Valori di resistività (Ω mm^2/m)
-RESISTIVITY = {
-    'SS316L': 0.00075,
-    'Kanthal A1': 1.45,
-    'Ni80': 1.09,
-}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore di Coil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calcolatore di Coil</h1>
+        <label for="material">Materiale del filo:</label>
+        <select id="material">
+            <option value="SS316L">SS316L</option>
+            <option value="Kanthal A1">Kanthal A1</option>
+            <option value="Ni80">Ni80</option>
+        </select>
+        
+        <label for="diameter">Diametro del filo (mm):</label>
+        <input type="number" id="diameter" step="0.01" placeholder="E.g., 0.4">
+        
+        <label for="wraps">Numero di spire:</label>
+        <input type="number" id="wraps" placeholder="E.g., 5">
+        
+        <label for="length">Lunghezza della coil (mm):</label>
+        <input type="number" id="length" placeholder="E.g., 10">
+        
+        <button onclick="calculateResistance()">Calcola Resistenza</button>
+        
+        <div class="result" id="result"></div>
+    </div>
 
-# Valori di TCR (Temperature Coefficient of Resistance)
-TCR = {
-    'SS316L': 0.00088,
-    'Kanthal A1': 0.000002,
-    'Ni80': 0.0001,
-}
+    <script>
+        const RESISTIVITY = {
+            'SS316L': 0.00075,
+            'Kanthal A1': 1.45,
+            'Ni80': 1.09,
+        };
 
-def calculate_resistance(material, wire_diameter, num_wraps, coil_length):
-    """
-    Calcola la resistenza della coil.
-    
-    :param material: Materiale del filo (SS316L, Kanthal A1, Ni80)
-    :param wire_diameter: Diametro del filo (mm)
-    :param num_wraps: Numero di spire
-    :param coil_length: Lunghezza della coil (mm)
-    :return: Resistenza della coil (Ω)
-    """
-    if material not in RESISTIVITY:
-        raise ValueError("Materiale non valido. Scegli tra: SS316L, Kanthal A1, Ni80.")
-    
-    resistivity = RESISTIVITY[material]
-    wire_area = (wire_diameter / 2) ** 2 * 3.1416  # Area della sezione del filo in mm^2
-    resistance_per_mm = resistivity / wire_area
-    total_resistance = resistance_per_mm * coil_length * num_wraps
-    
-    return total_resistance
+        function calculateResistance() {
+            const material = document.getElementById('material').value;
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            const wraps = parseInt(document.getElementById('wraps').value);
+            const length = parseFloat(document.getElementById('length').value);
+            
+            if (!material || isNaN(diameter) || isNaN(wraps) || isNaN(length)) {
+                document.getElementById('result').innerText = "Per favore, inserisci tutti i valori correttamente.";
+                return;
+            }
 
-def main():
-    print("Calcolatore della resistenza della coil")
-    material = input("Inserisci il materiale del filo (SS316L, Kanthal A1, Ni80): ")
-    wire_diameter = float(input("Inserisci il diametro del filo (mm): "))
-    num_wraps = int(input("Inserisci il numero di spire: "))
-    coil_length = float(input("Inserisci la lunghezza della coil (mm): "))
-    
-    try:
-        resistance = calculate_resistance(material, wire_diameter, num_wraps, coil_length)
-        print(f"La resistenza della coil è: {resistance:.2f} Ω")
-    except ValueError as e:
-        print(e)
+            const resistivity = RESISTIVITY[material];
+            const wireArea = Math.PI * Math.pow(diameter / 2, 2); // Area della sezione del filo in mm^2
+            const resistancePerMm = resistivity / wireArea;
+            const totalResistance = resistancePerMm * length * wraps;
 
-if __name__ == "__main__":
-    main()
+            document.getElementById('result').innerText = `La resistenza della coil è: ${totalResistance.toFixed(2)} Ω`;
+        }
+    </script>
+</body>
+</html>
